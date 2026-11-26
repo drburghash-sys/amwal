@@ -1,0 +1,4 @@
+import {initial} from './engine.mjs';
+const db=new Promise((resolve,reject)=>{const r=indexedDB.open('amwal',1);r.onupgradeneeded=()=>r.result.createObjectStore('state');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});
+export async function load(){const d=await db;return new Promise((resolve,reject)=>{const r=d.transaction('state').objectStore('state').get('main');r.onsuccess=()=>resolve(r.result??initial());r.onerror=()=>reject(r.error)})}
+export async function save(s){const d=await db;return new Promise((resolve,reject)=>{const t=d.transaction('state','readwrite');t.objectStore('state').put(s,'main');t.oncomplete=resolve;t.onerror=()=>reject(t.error);t.onabort=()=>reject(t.error)})}
