@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {initial,post,reverse,balances,paid,distribute} from './engine.mjs';
+import {debtMovement,debtBalance,forecast} from './planning.mjs';
+let s=initial();s.accounts=[{id:'a',opening:100000,type:'current'},{id:'b',opening:0,type:'reserve'}];
+const t={id:'1',kind:'transfer',date:'2026-12-01',month:'2026-12',amount:20000,postings:[{account:'a',amount:-20000},{account:'b',amount:20000}]};
+s=post(s,t);assert.deepEqual(balances(s),{a:80000,b:20000});assert.throws(()=>post(s,t));s=reverse(s,'1','2',t.date);assert.deepEqual(balances(s),{a:100000,b:0});assert.throws(()=>reverse(s,'1','3',t.date));
+const d={id:'d',type:'card',amount:0};s.debts=[d];s=debtMovement(s,d,{...t,id:'3',kind:'cardPurchase',amount:10000});assert.equal(debtBalance(s,d),10000);assert.equal(balances(s).a,100000);s=debtMovement(s,d,{...t,id:'4',kind:'debtPayment',amount:10000,account:'a'});assert.equal(debtBalance(s,d),0);assert.equal(balances(s).a,90000);s=reverse(s,'4','5',t.date);assert.equal(debtBalance(s,d),10000);assert.equal(balances(s).a,100000);
+s=post(s,{...t,id:'6',kind:'expense',item:'bill',amount:15000,postings:[{account:'a',amount:-15000}]});assert.equal(paid(s,'bill',t.month),15000);s=reverse(s,'6','7',t.date);assert.equal(paid(s,'bill',t.month),0);
+assert.deepEqual(distribute(100000,0),[100000,0,0]);assert.equal(distribute(1000000,400000).reduce((a,b)=>a+b,0),1000000);
+s.debts=[];s.settings.salary=100000;s.settings.pension=50000;s.settings.retirement='2027-01-01';s.budgets=[{month:'2026-12',amount:60000,recurring:true}];const f=forecast(s,'2026-12',2);assert.equal(f[0].net,40000);assert.equal(f[1].net,-10000);console.log('All accounting smoke tests passed');
