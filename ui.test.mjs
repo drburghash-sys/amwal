@@ -1,0 +1,4 @@
+import { chromium } from 'playwright';
+import assert from 'node:assert/strict';
+const browser=await chromium.launch({headless:true});
+try{const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:8080/');await page.locator('#app h2').waitFor();for(let i=0;i<13;i++){await page.locator('#nav button[data-page="12"]').click();if(i!==12)await page.locator('#app button[data-page="'+i+'"]').first().click();assert.ok(await page.locator('#app h2').innerText());assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),'Horizontal overflow on page '+i)}assert.deepEqual(errors,[]);console.log('All thirteen pages rendered at mobile viewport');}finally{await browser.close()}
