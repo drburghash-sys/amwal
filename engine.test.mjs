@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {initial,post,reverse,balances,paid,distribute,budgetRemaining} from './engine.mjs';
+import {initial,post,reverse,balances,paid,distribute,budgetRemaining,validateBackup} from './engine.mjs';
 import {debtMovement,debtBalance,forecast,obligationRemaining,obligationArrears} from './planning.mjs';
 let s=initial();s.accounts=[{id:'a',opening:100000,type:'current'},{id:'b',opening:0,type:'reserve'}];
 const t={id:'1',kind:'transfer',date:'2026-12-01',month:'2026-12',amount:20000,postings:[{account:'a',amount:-20000},{account:'b',amount:20000}]};
@@ -20,3 +20,5 @@ let fundingCase=initial();fundingCase.accounts=[{id:'cash',opening:0,type:'curre
 
 let late=initial();late.accounts=[{id:'a',opening:100000,type:'current'}];const school={id:'school',name:'School',date:'2026-12-01',extra:2,count:2,amount:20000,account:'a'};late.obligations=[school];assert.equal(obligationArrears(late,school,'2027-01'),20000);late=post(late,{...tx('late','expense',12000,[{account:'a',amount:-12000}]),month:'2027-01',dueMonth:'2026-12',obligation:'school'});assert.equal(obligationRemaining(late,school,'2026-12'),8000);assert.equal(obligationRemaining(late,school,'2027-02'),20000);assert.equal(obligationArrears(late,school,'2027-01'),8000);late=reverse(late,'late','undo-late','2027-01-02');assert.equal(obligationArrears(late,school,'2027-01'),20000);
 const bill={id:'final-bill',amount:15000};late=post(late,{...tx('final','expense',13500,[{account:'a',amount:-13500}]),item:bill.id,finalPayment:true});assert.equal(budgetRemaining(late,bill,'2026-12'),0);late=reverse(late,'final','undo-final','2026-12-02');assert.equal(budgetRemaining(late,bill,'2026-12'),15000);
+
+const restored=validateBackup(JSON.parse(JSON.stringify(cycle)));assert.deepEqual(balances(restored),balances(cycle));assert.deepEqual(restored.journal,cycle.journal);for(const mutate of [x=>x.accounts.push({...x.accounts[0]}),x=>x.accounts[0].opening=0.5,x=>x.journal[0].postings[0].account='missing',x=>x.version=99,x=>x.settings.rates[0]=[100,100,0]]){const invalid=structuredClone(cycle);mutate(invalid);assert.throws(()=>validateBackup(invalid))}console.log('Backup round-trip and corrupt backup rejection passed');
