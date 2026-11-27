@@ -7,7 +7,7 @@ const app=document.querySelector('#app'),nav=document.querySelector('#nav'),name
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>(n/100).toLocaleString('ar-SA',{maximumFractionDigits:2})+' ر.س',id=()=>crypto.randomUUID(),today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Riyadh'});
 const card=(a,b)=>'<section class="card"><span>'+a+'</span><strong class="amount">'+b+'</strong></section>',row=(a,b)=>'<div class="row"><span>'+a+'</span><strong>'+b+'</strong></div>';
-const input=(name,label,type='text',value='')=>'<label>'+label+'<input required name="'+name+'" type="'+type+'" value="'+esc(value)+'" '+(type==='number'?'step="0.01"':'')+'></label>';
+const input=(name,label,type='text',value='')=>'<label>'+label+'<input '+(name==='endMonth'?'':'required ')+'name="'+name+'" type="'+type+'" value="'+esc(value)+'" '+(type==='number'?'step="0.01"':'')+'></label>';
 const select=(name,label,opts)=>'<label>'+label+'<select name="'+name+'">'+opts.map(([v,t])=>'<option value="'+esc(v)+'">'+esc(t)+'</option>').join('')+'</select></label>';
 const accounts=()=>s.accounts.map(a=>[a.id,a.name]),form=(action,body,label='حفظ')=>'<form data-action="'+action+'">'+body+'<button>'+label+'</button></form>';
 const monthInput=()=>'<label>الشهر المالي<input id="month" type="month" value="'+esc(month)+'"></label>';
