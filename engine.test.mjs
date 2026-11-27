@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import {initial,post,reverse,balances,paid,distribute} from './engine.mjs';
-import {debtMovement,debtBalance,forecast} from './planning.mjs';
+import {initial,post,reverse,balances,paid,distribute,budgetRemaining} from './engine.mjs';
+import {debtMovement,debtBalance,forecast,obligationRemaining,obligationArrears} from './planning.mjs';
 let s=initial();s.accounts=[{id:'a',opening:100000,type:'current'},{id:'b',opening:0,type:'reserve'}];
 const t={id:'1',kind:'transfer',date:'2026-12-01',month:'2026-12',amount:20000,postings:[{account:'a',amount:-20000},{account:'b',amount:20000}]};
 s=post(s,t);assert.deepEqual(balances(s),{a:80000,b:20000});assert.throws(()=>post(s,t));s=reverse(s,'1','2',t.date);assert.deepEqual(balances(s),{a:100000,b:0});assert.throws(()=>reverse(s,'1','3',t.date));
@@ -17,3 +17,6 @@ let z=initial();z.accounts=[{id:'a',opening:100000,type:'current'},{id:'b',openi
 console.log('Allocation, forecast and restoration regression tests passed');
 
 let fundingCase=initial();fundingCase.accounts=[{id:'cash',opening:0,type:'current'},{id:'reserve',opening:0,type:'obligations'}];fundingCase.settings.salary=100000;fundingCase.settings.monthlyFunding={reserve:20000};fundingCase.budgets=[{id:'fund',month:'2026-12',amount:20000,fundingAccount:'reserve',recurring:true}];fundingCase.obligations=[{id:'school',name:'School',date:'2026-12-01',amount:20000,account:'reserve',extra:0}];let fc=forecast(fundingCase,'2026-12',1)[0];assert.equal(fc.net,80000);assert.equal(fc.funding,0);assert.equal(fc.shortages.length,0);
+
+let late=initial();late.accounts=[{id:'a',opening:100000,type:'current'}];const school={id:'school',name:'School',date:'2026-12-01',extra:2,count:2,amount:20000,account:'a'};late.obligations=[school];assert.equal(obligationArrears(late,school,'2027-01'),20000);late=post(late,{...tx('late','expense',12000,[{account:'a',amount:-12000}]),month:'2027-01',dueMonth:'2026-12',obligation:'school'});assert.equal(obligationRemaining(late,school,'2026-12'),8000);assert.equal(obligationRemaining(late,school,'2027-02'),20000);assert.equal(obligationArrears(late,school,'2027-01'),8000);late=reverse(late,'late','undo-late','2027-01-02');assert.equal(obligationArrears(late,school,'2027-01'),20000);
+const bill={id:'final-bill',amount:15000};late=post(late,{...tx('final','expense',13500,[{account:'a',amount:-13500}]),item:bill.id,finalPayment:true});assert.equal(budgetRemaining(late,bill,'2026-12'),0);late=reverse(late,'final','undo-final','2026-12-02');assert.equal(budgetRemaining(late,bill,'2026-12'),15000);
